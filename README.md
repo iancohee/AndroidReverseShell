@@ -28,7 +28,7 @@ Listener (default: secured)
 --------
 I'm providing a Listener written in Java, that uses a KeyStore containing the private key that the Android Reverse Shell will accept. The BouncyCastle jar needs to be in the classpath of the listener, as well as two command-line arguments: 1) Path to the keystore (also supplied in this repository, under 'Crypto') and 2) the port to listen on (7777 by default).
 
-	java -classpath /path/to/bcprov-jdk15on-146.jar Listener /path/to/javaserver.keystore 7777
+	java -classpath /path/to/bcprov-jdk15on-146.jar: Listener /path/to/javaserver.keystore 7777
 
 Listener (unsecured)
 --------
