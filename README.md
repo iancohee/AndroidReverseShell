@@ -8,7 +8,9 @@ on the target device. The application will dump the SMS contents of the device i
 
 Secured vs. Unsecured Shell
 --------------------------
-By default, the connection is made using a 'SecureConnectionThread,' but can be changed to use a 'ConnectionThread' instead, for cleartext, yet faster, transfer of data.
+By default, the connection is made using SSL encryption, provided by the Listener's keystore. The Certificate for the listener's private key has been imported to the Android application's TrustStore, located in /res/raw/android.truststore.
+If you want to create your own SSL keypair, you'll need to import the certificate manually.
+
 Secure
 
     // UI cannot do networking stuff on its own, it needs
@@ -37,13 +39,23 @@ Still working on that (I'll have it when I get SSL or Symmetric key encryption a
 Mini-tutorials
 ==============
 
-Generating a TrustStore
+Generating a KeyStore
 -----------------------
-    keytool -genkey -keystore android.truststore -alias android -storetype BKS -providerpath /path/to/bcprov-jdk15on-146.jar -provider org.bouncycastle.jce.provider.BouncyCastleProvider
+    keytool -genkey -keystore server.keystore -alias android -storetype BKS -providerpath /path/to/bcprov-jdk15on-146.jar -provider org.bouncycastle.jce.provider.BouncyCastleProvider
 
-Generating X509 Certificate
----------------------------
-This file will contain the both the private key, and the certificate into a file called `cert.pem`.
+Getting Android to accpet the KeyStore (TrustStore)
+---------------------------------------------------
+Step 1: Export public key from KeyStore into a `.crt` file. In this case the key's alias is 'android' and the resulting certificate will be 'android.crt'
+
+	keytool -export -keystore server.keystore -alias android -file android.crt -storetype BKS -providerpath /path/to/bcprov-jdk15on-146.jar -provider org.bouncycastle.jce.provider.BouncyCastleProvider
+
+Step 2: Import `.crt` in to the Android's TrustStore, under the alias 'android'.
+
+	keytool -import -keystore android.truststore -alias android -file android.crt -storetype BKS -providerpath /path/to/bcprov-jdk15on-146.jar -provider org.bouncycastle.jce.provider.BouncyCastleProvider	
+
+Generating X509 Certificate (untested)
+--------------------------------------
+This file will contain the both the private key, and the certificate into a file called `cert.pem`. It might be possible to use `ncat` with this cert, but I had issues keeping the connection alive using `ncat` as the listener. The preferred method should be to use the AndroidRSListener, written in Java. 
     
     openssl req -newkey rsa:2048 -nodes -days 3650 -x509 -keyout cert.pem -out cert.pem
 
@@ -53,8 +65,8 @@ Importing Certificate into TrustStore
 -------------------------------------
     keytool -importcert -trustcacerts -keystore android.truststore -file cert.pem -storetype BKS -providerpath /path/to/bcprov-jdk15on-146.jar -provider org.bouncycastle.jce.provider.BouncyCastleProvider 
 
-Adding Bouncy Castle to java.security File
-------------------------------------------
+Adding Bouncy Castle to java.security File, statically
+------------------------------------------------------
 Locate the correct security file, mine was a symlink in /usr
 
     locate java.security
