@@ -53,7 +53,7 @@ Step 2: Import `.crt` in to the Android's TrustStore, under the alias 'android'.
 
 	keytool -import -keystore android.truststore -alias android -file android.crt -storetype BKS -providerpath /path/to/bcprov-jdk15on-146.jar -provider org.bouncycastle.jce.provider.BouncyCastleProvider	
 
-Generating X509 Certificate (untested)
+Generating X509 Certificate (deprecated)
 --------------------------------------
 This file will contain the both the private key, and the certificate into a file called `cert.pem`. It might be possible to use `ncat` with this cert, but I had issues keeping the connection alive using `ncat` as the listener. The preferred method should be to use the AndroidRSListener, written in Java. 
     
