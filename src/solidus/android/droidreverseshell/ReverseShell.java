@@ -1,9 +1,13 @@
 /*
- * Simple Application that demonstrates a non-privileged shell from an Android device,
- * to a secure server somewhere on the network.
- * 
- * Disclaimer: Don't run this on devices you don't own! 
- * */
+*
+*  Android Reverse Shell, for use with Android Reverse Shell Listener
+*
+*  This program is licensed under GPL 3. See LICENSE.txt
+*  for more information.
+*
+*  Disclaimer: This software was developed as a "proof-of-concept" application,
+*  and should never be used against devices which you do not own. Don't
+* */
 package solidus.android.droidreverseshell;
 
 import java.io.DataOutputStream;
